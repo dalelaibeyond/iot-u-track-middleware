@@ -1,0 +1,292 @@
+/**
+ * MQTT Relay Module
+ *
+ * Forwards SUO messages to a downstream MQTT broker.
+ * Useful for distributing processed data to other systems.
+ */
+
+import mqtt, { MqttClient, IClientOptions } from 'mqtt';
+import { eventBus, SystemEvents } from '../core/event-bus';
+import { Logger } from '../utils/logger';
+import { SUOMessageEvent } from '../types/event.types';
+import { AnySUOMessage } from '../types/suo.types';
+
+export interface MQTTRelayConfig {
+  enabled: boolean;
+  brokerUrl: string;
+  clientId?: string;
+  username?: string;
+  password?: string;
+  reconnectPeriod: number;
+  connectTimeout: number;
+  keepalive: number;
+  qos: 0 | 1 | 2;
+  retain: boolean;
+  topicPrefix: string;
+  includeDeviceType: boolean;
+}
+
+export interface MQTTRelayStatus {
+  connected: boolean;
+  brokerUrl: string;
+  clientId: string;
+  messagesRelayed: number;
+  messagesFailed: number;
+  connectedAt?: Date;
+  reconnectCount: number;
+  lastError?: string;
+}
+
+/**
+ * MQTT Relay
+ * Relays SUO messages to a downstream MQTT broker
+ */
+export class MQTTRelay {
+  private config: MQTTRelayConfig;
+  private logger: Logger;
+  private client: MqttClient | null = null;
+  private isRunning: boolean = false;
+  private status: MQTTRelayStatus;
+
+  constructor(config: MQTTRelayConfig) {
+    this.config = config;
+    this.logger = new Logger('MQTTRelay');
+    this.status = {
+      connected: false,
+      brokerUrl: config.brokerUrl,
+      clientId: config.clientId || `mqtt-relay-${Date.now()}`,
+      messagesRelayed: 0,
+      messagesFailed: 0,
+      reconnectCount: 0,
+    };
+  }
+
+  /**
+   * Start the MQTT Relay
+   */
+  async start(): Promise<void> {
+    if (this.isRunning) {
+      this.logger.warn('MQTT Relay is already running');
+      return;
+    }
+
+    if (!this.config.enabled) {
+      this.logger.info('MQTT Relay is disabled');
+      return;
+    }
+
+    this.logger.info('Starting MQTT Relay...');
+
+    // Subscribe to SUO messages
+    eventBus.on<SUOMessageEvent>(
+      SystemEvents.SUO_MQTT_MESSAGE,
+      this.handleAnySUOMessage.bind(this)
+    );
+
+    // Connect to downstream broker
+    await this.connect();
+
+    this.isRunning = true;
+    this.logger.info('MQTT Relay started');
+  }
+
+  /**
+   * Stop the MQTT Relay
+   */
+  async stop(): Promise<void> {
+    if (!this.isRunning) {
+      return;
+    }
+
+    this.logger.info('Stopping MQTT Relay...');
+
+    // Unsubscribe from events
+    eventBus.off<SUOMessageEvent>(
+      SystemEvents.SUO_MQTT_MESSAGE,
+      this.handleAnySUOMessage.bind(this)
+    );
+
+    // Disconnect from broker
+    await this.disconnect();
+
+    this.isRunning = false;
+    this.logger.info('MQTT Relay stopped');
+  }
+
+  /**
+   * Connect to downstream MQTT broker
+   */
+  private async connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const options: IClientOptions = {
+        clientId: this.status.clientId,
+        reconnectPeriod: this.config.reconnectPeriod,
+        connectTimeout: this.config.connectTimeout,
+        keepalive: this.config.keepalive,
+        clean: true,
+      };
+
+      if (this.config.username) {
+        options.username = this.config.username;
+      }
+      if (this.config.password) {
+        options.password = this.config.password;
+      }
+
+      this.logger.info(`Connecting to downstream broker: ${this.config.brokerUrl}`);
+
+      this.client = mqtt.connect(this.config.brokerUrl, options);
+
+      this.client.on('connect', () => {
+        this.logger.info('Connected to downstream MQTT broker');
+        this.status.connected = true;
+        this.status.connectedAt = new Date();
+        resolve();
+      });
+
+      this.client.on('reconnect', () => {
+        this.logger.warn('Reconnecting to downstream MQTT broker...');
+        this.status.reconnectCount++;
+      });
+
+      this.client.on('error', error => {
+        this.logger.error('MQTT Relay connection error', {
+          error: error.message,
+        });
+        this.status.lastError = error.message;
+        if (!this.status.connected) {
+          reject(error);
+        }
+      });
+
+      this.client.on('close', () => {
+        this.logger.warn('Disconnected from downstream MQTT broker');
+        this.status.connected = false;
+      });
+
+      this.client.on('offline', () => {
+        this.logger.warn('MQTT Relay client is offline');
+        this.status.connected = false;
+      });
+    });
+  }
+
+  /**
+   * Disconnect from downstream MQTT broker
+   */
+  private async disconnect(): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    return new Promise(resolve => {
+      this.client!.end(false, {}, () => {
+        this.logger.info('Disconnected from downstream MQTT broker');
+        this.status.connected = false;
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Handle SUO messages and relay them
+   */
+  private handleAnySUOMessage(event: SUOMessageEvent): void {
+    if (!this.client || !this.status.connected) {
+      return;
+    }
+
+    try {
+      const message = event.message;
+      const topic = this.buildTopic(message);
+      const payload = this.buildPayload(message);
+
+      this.client.publish(
+        topic,
+        payload,
+        {
+          qos: this.config.qos,
+          retain: this.config.retain,
+        },
+        error => {
+          if (error) {
+            this.logger.error('Failed to relay message', {
+              topic,
+              error: error.message,
+            });
+            this.status.messagesFailed++;
+          } else {
+            this.logger.debug('Message relayed', { topic });
+            this.status.messagesRelayed++;
+          }
+        }
+      );
+    } catch (error) {
+      this.logger.error('Error relaying message', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.status.messagesFailed++;
+    }
+  }
+
+  /**
+   * Build relay topic from SUO message
+   */
+  private buildTopic(message: AnySUOMessage): string {
+    const parts: string[] = [this.config.topicPrefix];
+
+    if (this.config.includeDeviceType) {
+      parts.push(message.deviceType.toLowerCase());
+    }
+
+    parts.push(message.deviceId);
+    parts.push(message.suoType.toLowerCase().replace('suo_', ''));
+
+    if ((message as any).moduleIndex !== null && (message as any).moduleIndex !== undefined) {
+      parts.push(`module${(message as any).moduleIndex}`);
+    }
+
+    return parts.join('/');
+  }
+
+  /**
+   * Build relay payload from SUO message
+   */
+  private buildPayload(message: AnySUOMessage): Buffer {
+    const payload = {
+      ...message,
+      relayedAt: new Date().toISOString(),
+    };
+
+    return Buffer.from(JSON.stringify(payload));
+  }
+
+  /**
+   * Get relay status
+   */
+  getStatus(): MQTTRelayStatus {
+    return { ...this.status };
+  }
+
+  /**
+   * Check if relay is running
+   */
+  isActive(): boolean {
+    return this.isRunning;
+  }
+
+  /**
+   * Get configuration
+   */
+  getConfig(): MQTTRelayConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Update configuration
+   */
+  updateConfig(config: Partial<MQTTRelayConfig>): void {
+    this.config = { ...this.config, ...config };
+    this.logger.info('MQTT Relay configuration updated');
+  }
+}

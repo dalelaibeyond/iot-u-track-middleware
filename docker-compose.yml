@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # MQTT Broker (EMQX for development)
+  mqtt-broker:
+    image: emqx/emqx:5.0
+    container_name: mqtt-middleware-mqtt
+    ports:
+      - "1883:1883"    # MQTT
+      - "8083:8083"    # MQTT over WebSocket
+      - "8883:8883"    # MQTT over SSL
+      - "18083:18083"  # EMQX Dashboard
+    environment:
+      EMQX_NODE_NAME: emqx@127.0.0.1
+      EMQX_NODE_COOKIE: emqxsecretcookie
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    networks:
+      - mqtt-middleware-network
+    healthcheck:
+      test: ["CMD", "emqx", "ctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: mqtt-middleware-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mqtt_middleware
+      MYSQL_USER: middleware
+      MYSQL_PASSWORD: middleware
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - mqtt-middleware-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MQTT Middleware Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mqtt-middleware-app
+    ports:
+      - "3000:3000"
+      - "3001:3001"  # WebSocket
+    environment:
+      NODE_ENV: development
+      SERVER_PORT: 3000
+      MQTT_BROKER_HOST: mqtt-broker
+      MQTT_BROKER_PORT: 1883
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: mqtt_middleware
+      DB_USERNAME: middleware
+      DB_PASSWORD: middleware
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    networks:
+      - mqtt-middleware-network
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  emqx_data:
+  emqx_log:
+  mysql_data:
+
+networks:
+  mqtt-middleware-network:
+    driver: bridge

@@ -1,0 +1,187 @@
+
+Topic: V6800Upload/2123456789/HeartBeat
+Raw:
+{
+  "msg_type" : "heart_beat_req",
+  "module_type" : "mt_gw",
+  "module_sn" : "2123456789",
+  "bus_V" : "23.89",
+  "bus_I" : "5.40",
+  "main_power" : 1,
+  "backup_power" : 0,
+  "uuid_number" : 448817932,
+  "data" : [ {
+    "module_index" : 4,
+    "module_sn" : "1134666004",
+    "module_m_num" : 1,
+    "module_u_num" : 6
+  } ]
+}
+
+
+Topic: V6800Upload/2123456789/Door
+Raw:
+{
+  "msg_type" : "door_state_resp",
+  "code" : 200,
+  "host_gateway_port_index" : 4,
+  "extend_module_sn" : "1134666004",
+  "new_state" : 0,
+  "uuid_number" : 338105664
+}
+
+Topic: V6800Upload/2123456789/Door
+Raw:
+{
+  "msg_type" : "door_state_changed_notify_req",
+  "gateway_sn" : "2123456789",
+  "uuid_number" : 440530492,
+  "data" : [ {
+    "extend_module_sn" : "1134666004",
+    "host_gateway_port_index" : 4,
+    "new_state" : 1
+  } ]
+}
+
+Topic: V6800Upload/2123456789/LabelState
+Raw:
+{
+  "msg_type" : "u_state_resp",
+  "code" : 200,
+  "gateway_sn" : "2123456789",
+  "uuid_number" : 1912381473,
+  "data" : [ {
+    "host_gateway_port_index" : 4,
+    "extend_module_sn" : "1134666004",
+    "u_data" : [ {
+      "u_index" : 6, "u_state" : 0,  "tag_code" : null,   "warning" : 0   }, {
+      "u_index" : 5, "u_state" : 0,  "tag_code" : null,   "warning" : 0  }, {
+      "u_index" : 4, "u_state" : 0,  "tag_code" : null,  "warning" : 0 }, {
+      "u_index" : 3, "u_state" : 0,  "tag_code" : null,  "warning" : 0 }, {
+      "u_index" : 2, "u_state" : 1, "tag_code" : "DD3698A4",  "warning" : 0 }, {
+      "u_index" : 1, "u_state" : 1, "tag_code" : "DD395064",   "warning" : 0 } ]
+  } ]
+}
+
+Topic:V6800Upload/2123456789/LabelState
+Raw:
+{
+  "msg_type" : "u_state_changed_notify_req",
+  "gateway_sn" : "2123456789",
+  "uuid_number" : 1277164225,
+  "data" : [ {
+    "host_gateway_port_index" : 4,
+    "extend_module_sn" : "1134666004",
+    "u_data" : [ {
+      "u_index" : 2,  "new_state" : 1,     "old_state" : 0,      "tag_code" : "DD3698A4",      "warning" : 0    }, {
+      "u_index" : 1,   "new_state" : 1,     "old_state" :0,      "tag_code" : "DD395064",     "warning" : 0    } ]
+  } ]
+}
+
+Topic: V6800Upload/2123456789/Init
+Raw:
+{
+  "msg_type" : "devies_init_req",
+  "gateway_sn" : "2123456789",
+  "gateway_ip" : "192.168.100.212",
+  "gateway_mac" : "08:80:7E:91:61:15",
+  "uuid_number" : 284392567,
+  "data" : [ {
+    "module_type" : "mt_ul",
+    "module_index" : 4,
+    "module_sn" : "1134666004",
+    "module_m_num" : 1,
+    "module_u_num" : 6,
+    "module_sw_version" : "2307101644",
+    "module_supplier" : "Digitalor",
+    "module_brand" : "Digitalor",
+    "module_model" : "Digitalor"
+  } ]
+}
+
+Topic: V6800Upload/2123456789/DeviceChange
+Raw:
+{
+  "msg_type" : "devices_changed_req",
+  "gateway_sn" : "2123456789",
+  "uuid_number" : 343548517,
+  "data" : [ {
+    "module_type" : "mt_ul",
+    "module_index" : 4,
+    "module_sn" : "1134666004",
+    "module_m_num" : 2,
+    "module_u_num" : 12,
+    "module_sw_version" : "2307101644",
+    "module_supplier" : "Digitalor",
+    "module_brand" : "Digitalor",
+    "module_model" : "Digitalor"
+  } ]
+}
+
+Topic: V6800Upload/2123456789/TemHum
+Raw:
+{
+  "msg_type" : "temper_humidity_resp",
+  "code" : 200,
+  "gateway_sn" : "2123456789",
+  "uuid_number" : 1156421679,
+  "data" : [ {
+    "host_gateway_port_index" : 4,
+    "extend_module_sn" : "1134666004",
+    "th_data" : [ {
+      "temper_position" : 10,
+      "hygrometer_position" : 10,
+      "temper_swot" : 27,
+      "hygrometer_swot" : 53.70000076293945
+    }, {
+      "temper_position" : 11,
+      "hygrometer_position" : 11,
+      "temper_swot" : 27.799999237060547,
+      "hygrometer_swot" : 51.0999984741211
+    } ]
+  } ]
+}
+
+Topic: V6800Upload/2123456789/TemHum
+Raw:
+{
+  "msg_type" : "temper_humidity_exception_nofity_req",
+  "gateway_sn" : "2123456789",
+  "uuid_number" : 572477555,
+  "data" : [ {
+    "host_gateway_port_index" : 4,
+    "extend_module_sn" : "1134666004",
+    "th_data" : [ {
+      "temper_position" : 10,
+      "hygrometer_position" : 10,
+      "temper_swot" : 26.899999618530273,
+      "hygrometer_swot" : 54.0999984741211
+    }, {
+      "temper_position" : 11,
+      "hygrometer_position" : 11,
+      "temper_swot" : 27.600000381469727,
+      "hygrometer_swot" : 52.4000015258789
+    }, {
+      "temper_position" : 12,
+      "hygrometer_position" : 12,
+      "temper_swot" : 0,
+      "hygrometer_swot" : 0
+    }, {
+      "temper_position" : 13,
+      "hygrometer_position" : 13,
+      "temper_swot" : 0,
+      "hygrometer_swot" : 0
+    }, {
+      "temper_position" : 14,
+      "hygrometer_position" : 14,
+      "temper_swot" : 0,
+      "hygrometer_swot" : 0
+    }, {
+      "temper_position" : 15,
+      "hygrometer_position" : 15,
+      "temper_swot" : 0,
+      "hygrometer_swot" : 0
+    } ]
+  } ]
+}
+
