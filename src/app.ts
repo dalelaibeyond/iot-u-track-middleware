@@ -9,25 +9,34 @@
  * - Output modules (Cache, Relay, etc.)
  */
 
-import { getConfig, AppConfig } from './config';
-import { EventBus, SystemEvents } from './core/event-bus';
-import { ParserFactory } from './core/parser/parser-factory';
-import { NormalizerFactory } from './core/normalizer/normalizer-factory';
-import { MQTTSubscriber } from './core/mqtt/mqtt-subscriber';
-import { UOSCacheManager } from './modules/cache';
-import { SmartHBModule } from './modules/smart-hb';
-import { ProtocolAdapterModule } from './modules/protocol-adapter';
-import { WatchdogModule } from './modules/watchdog';
-import { CommandService } from './modules/command';
-import { Database, createDatabase } from './database/database';
-import { DatabaseWriter } from './database/database-writer';
-import { APIServer } from './api/server';
-import { MQTTRelay, WebSocketOutput, WebhookDispatcher, WebhookEndpoint } from './output';
-import { Logger, LogLevel } from './utils/logger';
-import { IMessageParser } from './core/parser/parser.interface';
-import { INormalizer } from './core/normalizer/normalizer.interface';
-import { RawMQTTMessageEvent, SIFMessageEvent, SUOMessageEvent } from './types/event.types';
-import { SIFMessage } from './types/sif.types';
+import { getConfig, AppConfig } from "./config";
+import { EventBus, SystemEvents } from "./core/event-bus";
+import { ParserFactory } from "./core/parser/parser-factory";
+import { NormalizerFactory } from "./core/normalizer/normalizer-factory";
+import { MQTTSubscriber } from "./core/mqtt/mqtt-subscriber";
+import { UOSCacheManager } from "./modules/cache";
+import { SmartHBModule } from "./modules/smart-hb";
+import { ProtocolAdapterModule } from "./modules/protocol-adapter";
+import { WatchdogModule } from "./modules/watchdog";
+import { CommandService } from "./modules/command";
+import { Database, createDatabase } from "./database/database";
+import { DatabaseWriter } from "./database/database-writer";
+import { APIServer } from "./api/server";
+import {
+  MQTTRelay,
+  WebSocketOutput,
+  WebhookDispatcher,
+  WebhookEndpoint,
+} from "./output";
+import { Logger, LogLevel } from "./utils/logger";
+import { IMessageParser } from "./core/parser/parser.interface";
+import { INormalizer } from "./core/normalizer/normalizer.interface";
+import {
+  RawMQTTMessageEvent,
+  SIFMessageEvent,
+  SUOMessageEvent,
+} from "./types/event.types";
+import { SIFMessage } from "./types/sif.types";
 
 export class Application {
   private config: AppConfig;
@@ -51,7 +60,7 @@ export class Application {
 
   constructor() {
     this.config = getConfig();
-    this.logger = new Logger('Application');
+    this.logger = new Logger("Application");
     this.eventBus = EventBus.getInstance();
     this.parsers = new Map();
     this.normalizers = new Map();
@@ -63,27 +72,30 @@ export class Application {
       {
         enabled: this.config.modules.smartHB.enabled,
         queryCooldown: this.config.modules.smartHB.config.queryCooldown,
-        triggerOnHeartbeat: this.config.modules.smartHB.config.triggerOnHeartbeat,
+        triggerOnHeartbeat:
+          this.config.modules.smartHB.config.triggerOnHeartbeat,
         enableDeviceInfoRepair: true, // Enable device info repair
       },
-      this.uosCacheManager
+      this.uosCacheManager,
     );
 
     this.protocolAdapter = new ProtocolAdapterModule(
       {
         enabled: this.config.modules.protocolAdapter.enabled,
-        dedupWindowMs: this.config.modules.protocolAdapter.config.deduplicationWindow,
+        dedupWindowMs:
+          this.config.modules.protocolAdapter.config.deduplicationWindow,
       },
-      this.uosCacheManager.getCache()
+      this.uosCacheManager.getCache(),
     );
 
     this.watchdog = new WatchdogModule(
       {
-        enabled: false, // Disabled by default
-        healthCheckInterval: 30000, // 30 seconds
+        enabled: this.config.modules.watchdog.enabled,
+        healthCheckInterval:
+          this.config.modules.watchdog.config.healthCheckInterval,
         tasks: [],
       },
-      this.uosCacheManager
+      this.uosCacheManager,
     );
 
     this.commandService = new CommandService({
@@ -96,7 +108,10 @@ export class Application {
     this.database = createDatabase(this.config.database);
 
     // Initialize database writer
-    this.databaseWriter = new DatabaseWriter(this.config.databaseWriter, this.database);
+    this.databaseWriter = new DatabaseWriter(
+      this.config.databaseWriter,
+      this.database,
+    );
 
     // Initialize API server
     this.apiServer = new APIServer(
@@ -108,7 +123,7 @@ export class Application {
         corsOrigins: this.config.api.corsOrigins,
         apiPrefix: this.config.api.apiPrefix,
       },
-      this
+      this,
     );
 
     // Initialize output modules if enabled
@@ -165,7 +180,7 @@ export class Application {
    * Initialize the application
    */
   async initialize(): Promise<void> {
-    this.logger.info('Initializing MQTT Middleware Application...');
+    this.logger.info("Initializing MQTT Middleware Application...");
 
     // Set log level
     const logLevelMap: Record<string, LogLevel> = {
@@ -185,22 +200,22 @@ export class Application {
     // Setup event handlers
     this.setupEventHandlers();
 
-    this.logger.info('Application initialized successfully');
+    this.logger.info("Application initialized successfully");
   }
 
   /**
    * Initialize message parsers
    */
   private initializeParsers(): void {
-    this.logger.info('Initializing parsers...');
+    this.logger.info("Initializing parsers...");
 
     // Register V5008 parser
-    const v5008Parser = ParserFactory.getParser('V5008Upload/123/OpeAck');
-    this.parsers.set('V5008', v5008Parser);
+    const v5008Parser = ParserFactory.getParser("V5008Upload/123/OpeAck");
+    this.parsers.set("V5008", v5008Parser);
 
     // Register V6800 parser
-    const v6800Parser = ParserFactory.getParser('V6800Upload/123/Init');
-    this.parsers.set('V6800', v6800Parser);
+    const v6800Parser = ParserFactory.getParser("V6800Upload/123/Init");
+    this.parsers.set("V6800", v6800Parser);
 
     this.logger.info(`Initialized ${this.parsers.size} parsers`);
   }
@@ -209,21 +224,21 @@ export class Application {
    * Initialize normalizers
    */
   private initializeNormalizers(): void {
-    this.logger.info('Initializing normalizers...');
+    this.logger.info("Initializing normalizers...");
 
     // Register V5008 normalizer
     const v5008Normalizer = NormalizerFactory.getNormalizer({
-      deviceType: 'V5008',
-      messageType: 'HEARTBEAT',
+      deviceType: "V5008",
+      messageType: "HEARTBEAT",
     } as SIFMessage);
-    this.normalizers.set('V5008', v5008Normalizer);
+    this.normalizers.set("V5008", v5008Normalizer);
 
     // Register V6800 normalizer
     const v6800Normalizer = NormalizerFactory.getNormalizer({
-      deviceType: 'V6800',
-      messageType: 'DEV_MOD_INFO',
+      deviceType: "V6800",
+      messageType: "DEV_MOD_INFO",
     } as SIFMessage);
-    this.normalizers.set('V6800', v6800Normalizer);
+    this.normalizers.set("V6800", v6800Normalizer);
 
     this.logger.info(`Initialized ${this.normalizers.size} normalizers`);
   }
@@ -232,24 +247,27 @@ export class Application {
    * Setup event handlers
    */
   private setupEventHandlers(): void {
-    this.logger.info('Setting up event handlers...');
+    this.logger.info("Setting up event handlers...");
 
     // Handle raw MQTT messages
     this.eventBus.on<RawMQTTMessageEvent>(
       SystemEvents.RAW_MQTT_MESSAGE,
-      this.handleRawMessage.bind(this)
+      this.handleRawMessage.bind(this),
     );
 
     // Handle SIF messages
-    this.eventBus.on<SIFMessageEvent>(SystemEvents.SIF_MESSAGE, this.handleSIFMessage.bind(this));
+    this.eventBus.on<SIFMessageEvent>(
+      SystemEvents.SIF_MESSAGE,
+      this.handleSIFMessage.bind(this),
+    );
 
     // Handle SUO messages
     this.eventBus.on<SUOMessageEvent>(
       SystemEvents.SUO_MQTT_MESSAGE,
-      this.handleSUOMessage.bind(this)
+      this.handleSUOMessage.bind(this),
     );
 
-    this.logger.info('Event handlers setup complete');
+    this.logger.info("Event handlers setup complete");
   }
 
   /**
@@ -257,10 +275,10 @@ export class Application {
    */
   private async handleRawMessage(event: RawMQTTMessageEvent): Promise<void> {
     try {
-      this.logger.info('Received raw MQTT message', {
+      this.logger.info("Received raw MQTT message", {
         topic: event.topic,
         payloadSize: event.payload.length,
-        payloadHex: event.payload.toString('hex').substring(0, 100),
+        payloadHex: event.payload.toString("hex").substring(0, 100),
       });
 
       // Get appropriate parser
@@ -278,14 +296,16 @@ export class Application {
       const parsedResult = await parser.parse(rawMessage);
 
       // Handle both single message and array of messages
-      const sifMessages = Array.isArray(parsedResult) ? parsedResult : [parsedResult];
+      const sifMessages = Array.isArray(parsedResult)
+        ? parsedResult
+        : [parsedResult];
 
       // Emit SIF message event(s)
       for (const sifMessage of sifMessages) {
         // Print SIF message with color highlighting
-        console.log('\n📥 SIF MESSAGE:');
+        console.log("\n📥 SIF MESSAGE:");
         console.log(sifMessage);
-        console.log('');
+        console.log("");
 
         this.eventBus.emit<SIFMessageEvent>(SystemEvents.SIF_MESSAGE, {
           message: sifMessage,
@@ -293,7 +313,7 @@ export class Application {
         });
       }
     } catch (error) {
-      this.logger.error('Failed to parse raw message', {
+      this.logger.error("Failed to parse raw message", {
         topic: event.topic,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -305,7 +325,7 @@ export class Application {
    */
   private async handleSIFMessage(event: SIFMessageEvent): Promise<void> {
     try {
-      this.logger.debug('Received SIF message', {
+      this.logger.debug("Received SIF message", {
         deviceType: event.message.deviceType,
         messageType: event.message.messageType,
       });
@@ -321,9 +341,9 @@ export class Application {
 
       for (const suoMessage of messages) {
         // Print SUO message with color highlighting
-        console.log('\n📤 SUO MESSAGE:');
+        console.log("\n📤 SUO MESSAGE:");
         console.log(suoMessage);
-        console.log('');
+        console.log("");
 
         this.eventBus.emit<SUOMessageEvent>(SystemEvents.SUO_MQTT_MESSAGE, {
           message: suoMessage,
@@ -331,7 +351,7 @@ export class Application {
         });
       }
     } catch (error) {
-      this.logger.error('Failed to normalize SIF message', {
+      this.logger.error("Failed to normalize SIF message", {
         deviceType: event.message.deviceType,
         messageType: event.message.messageType,
         error: error instanceof Error ? error.message : String(error),
@@ -344,7 +364,7 @@ export class Application {
    */
   private handleSUOMessage(event: SUOMessageEvent): void {
     try {
-      this.logger.debug('Received SUO message', {
+      this.logger.debug("Received SUO message", {
         suoType: event.message.suoType,
         deviceId: event.message.deviceId,
         moduleIndex: (event.message as any).moduleIndex ?? null,
@@ -357,12 +377,12 @@ export class Application {
       // - WebSocket Server (via EventBus)
       // - Webhook Dispatcher (via EventBus)
 
-      this.logger.info('SUO message processed and routed to output modules', {
+      this.logger.info("SUO message processed and routed to output modules", {
         suoType: event.message.suoType,
         deviceId: event.message.deviceId,
       });
     } catch (error) {
-      this.logger.error('Failed to process SUO message', {
+      this.logger.error("Failed to process SUO message", {
         suoType: event.message.suoType,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -378,10 +398,10 @@ export class Application {
 
       try {
         await this.stop();
-        this.logger.info('Graceful shutdown completed');
+        this.logger.info("Graceful shutdown completed");
         process.exit(0);
       } catch (error) {
-        this.logger.error('Error during shutdown', {
+        this.logger.error("Error during shutdown", {
           error: error instanceof Error ? error.message : String(error),
         });
         process.exit(1);
@@ -389,30 +409,30 @@ export class Application {
     };
 
     // Handle Ctrl+C
-    process.on('SIGINT', () => {
-      void handleShutdown('SIGINT');
+    process.on("SIGINT", () => {
+      void handleShutdown("SIGINT");
     });
 
     // Handle termination signal
-    process.on('SIGTERM', () => {
-      void handleShutdown('SIGTERM');
+    process.on("SIGTERM", () => {
+      void handleShutdown("SIGTERM");
     });
 
     // Handle uncaught exceptions
-    process.on('uncaughtException', error => {
-      this.logger.error('Uncaught exception', {
+    process.on("uncaughtException", (error) => {
+      this.logger.error("Uncaught exception", {
         error: error.message,
         stack: error.stack,
       });
-      void handleShutdown('uncaughtException');
+      void handleShutdown("uncaughtException");
     });
 
     // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason, promise) => {
-      this.logger.error('Unhandled promise rejection', { reason });
+    process.on("unhandledRejection", (reason, promise) => {
+      this.logger.error("Unhandled promise rejection", { reason });
     });
 
-    this.logger.debug('Signal handlers registered');
+    this.logger.debug("Signal handlers registered");
   }
 
   /**
@@ -420,11 +440,11 @@ export class Application {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      this.logger.warn('Application is already running');
+      this.logger.warn("Application is already running");
       return;
     }
 
-    this.logger.info('Starting MQTT Middleware Application...');
+    this.logger.info("Starting MQTT Middleware Application...");
     this.isRunning = true;
 
     // Initialize the application (setup event handlers, etc.)
@@ -436,20 +456,20 @@ export class Application {
     // Start UOS Cache Manager if enabled
     if (this.config.features.enableCache) {
       this.uosCacheManager.start();
-      this.logger.info('UOS Cache Manager started');
+      this.logger.info("UOS Cache Manager started");
     }
 
     // Connect to database if enabled
     if (this.config.database.enabled) {
       try {
         await this.database.connect();
-        this.logger.info('Database connected');
+        this.logger.info("Database connected");
 
         // Start database writer
         this.databaseWriter.start();
-        this.logger.info('Database Writer started');
+        this.logger.info("Database Writer started");
       } catch (error) {
-        this.logger.error('Failed to connect to database', {
+        this.logger.error("Failed to connect to database", {
           error: error instanceof Error ? error.message : String(error),
         });
         // Don't throw - continue without database
@@ -459,9 +479,9 @@ export class Application {
     // Connect to MQTT broker
     try {
       await this.mqttSubscriber.connect();
-      this.logger.info('MQTT Subscriber connected');
+      this.logger.info("MQTT Subscriber connected");
     } catch (error) {
-      this.logger.error('Failed to connect to MQTT broker', {
+      this.logger.error("Failed to connect to MQTT broker", {
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;
@@ -470,12 +490,12 @@ export class Application {
     // Start optional modules
     if (this.config.modules.smartHB.enabled) {
       this.smartHB.start();
-      this.logger.info('SmartHB module started');
+      this.logger.info("SmartHB module started");
     }
 
     if (this.config.modules.protocolAdapter.enabled) {
       this.protocolAdapter.start();
-      this.logger.info('ProtocolAdapter module started');
+      this.logger.info("ProtocolAdapter module started");
     }
 
     this.watchdog.start();
@@ -485,7 +505,7 @@ export class Application {
     try {
       await this.apiServer.start();
     } catch (error) {
-      this.logger.error('Failed to start API Server', {
+      this.logger.error("Failed to start API Server", {
         error: error instanceof Error ? error.message : String(error),
       });
       // Don't throw - continue without API
@@ -494,7 +514,7 @@ export class Application {
     // Start output modules
     await this.startOutputModules();
 
-    this.logger.info('Application started successfully');
+    this.logger.info("Application started successfully");
     this.logger.info(`Environment: ${this.config.nodeEnv}`);
     this.logger.info(`MQTT Broker: ${this.config.mqtt.brokerUrl}`);
   }
@@ -507,9 +527,9 @@ export class Application {
     if (this.mqttRelay) {
       try {
         await this.mqttRelay.start();
-        this.logger.info('MQTT Relay started');
+        this.logger.info("MQTT Relay started");
       } catch (error) {
-        this.logger.error('Failed to start MQTT Relay', {
+        this.logger.error("Failed to start MQTT Relay", {
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -519,9 +539,9 @@ export class Application {
     if (this.webSocketServer) {
       try {
         await this.webSocketServer.start();
-        this.logger.info('WebSocket Server started');
+        this.logger.info("WebSocket Server started");
       } catch (error) {
-        this.logger.error('Failed to start WebSocket Server', {
+        this.logger.error("Failed to start WebSocket Server", {
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -531,9 +551,9 @@ export class Application {
     if (this.webhookDispatcher) {
       try {
         this.webhookDispatcher.start();
-        this.logger.info('Webhook Dispatcher started');
+        this.logger.info("Webhook Dispatcher started");
       } catch (error) {
-        this.logger.error('Failed to start Webhook Dispatcher', {
+        this.logger.error("Failed to start Webhook Dispatcher", {
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -548,51 +568,51 @@ export class Application {
       return;
     }
 
-    this.logger.info('Stopping MQTT Middleware Application...');
+    this.logger.info("Stopping MQTT Middleware Application...");
     this.isRunning = false;
 
     // Disconnect MQTT Subscriber
     if (this.mqttSubscriber.isMqttConnected()) {
       await this.mqttSubscriber.disconnect();
-      this.logger.info('MQTT Subscriber disconnected');
+      this.logger.info("MQTT Subscriber disconnected");
     }
 
     // Stop UOS Cache Manager
     if (this.uosCacheManager.isActive()) {
       this.uosCacheManager.stop();
-      this.logger.info('UOS Cache Manager stopped');
+      this.logger.info("UOS Cache Manager stopped");
     }
 
     // Stop database writer and disconnect
     if (this.databaseWriter.isActive()) {
       await this.databaseWriter.stop();
-      this.logger.info('Database Writer stopped');
+      this.logger.info("Database Writer stopped");
     }
 
     if (this.database.isDatabaseConnected()) {
       await this.database.disconnect();
-      this.logger.info('Database disconnected');
+      this.logger.info("Database disconnected");
     }
 
     // Stop optional modules
     if (this.smartHB.isActive()) {
       this.smartHB.stop();
-      this.logger.info('SmartHB stopped');
+      this.logger.info("SmartHB stopped");
     }
 
     if (this.protocolAdapter.isActive()) {
       this.protocolAdapter.stop();
-      this.logger.info('ProtocolAdapter stopped');
+      this.logger.info("ProtocolAdapter stopped");
     }
 
     if (this.watchdog.isActive()) {
       this.watchdog.stop();
-      this.logger.info('Watchdog stopped');
+      this.logger.info("Watchdog stopped");
     }
 
     if (this.commandService.isActive()) {
       this.commandService.stop();
-      this.logger.info('CommandService stopped');
+      this.logger.info("CommandService stopped");
     }
 
     // Stop output modules
@@ -606,7 +626,7 @@ export class Application {
     // Remove event listeners
     this.eventBus.removeAllListeners();
 
-    this.logger.info('Application stopped');
+    this.logger.info("Application stopped");
   }
 
   /**
@@ -616,19 +636,19 @@ export class Application {
     // Stop Webhook Dispatcher
     if (this.webhookDispatcher?.isActive()) {
       await this.webhookDispatcher.stop();
-      this.logger.info('Webhook Dispatcher stopped');
+      this.logger.info("Webhook Dispatcher stopped");
     }
 
     // Stop WebSocket Server
     if (this.webSocketServer?.isActive()) {
       await this.webSocketServer.stop();
-      this.logger.info('WebSocket Server stopped');
+      this.logger.info("WebSocket Server stopped");
     }
 
     // Stop MQTT Relay
     if (this.mqttRelay?.isActive()) {
       await this.mqttRelay.stop();
-      this.logger.info('MQTT Relay stopped');
+      this.logger.info("MQTT Relay stopped");
     }
   }
 
@@ -742,9 +762,9 @@ export class Application {
 export const app = new Application();
 
 // Auto-start the application when this module is loaded (only in non-test environments)
-if (process.env.NODE_ENV !== 'test') {
-  app.start().catch(error => {
-    console.error('Failed to start application:', error);
+if (process.env.NODE_ENV !== "test") {
+  app.start().catch((error) => {
+    console.error("Failed to start application:", error);
     process.exit(1);
   });
 }

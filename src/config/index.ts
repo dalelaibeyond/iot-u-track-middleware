@@ -5,11 +5,11 @@
  * Loads from environment variables with sensible defaults
  */
 
-import dotenv from 'dotenv';
-import { join } from 'path';
+import dotenv from "dotenv";
+import { join } from "path";
 
 // Load environment variables from .env file
-dotenv.config({ path: join(process.cwd(), '.env') });
+dotenv.config({ path: join(process.cwd(), ".env") });
 
 /**
  * Application Configuration
@@ -99,6 +99,12 @@ export interface AppConfig {
         deduplicationWindow: number;
       };
     };
+    watchdog: {
+      enabled: boolean;
+      config: {
+        healthCheckInterval: number;
+      };
+    };
   };
 
   // Output Modules
@@ -166,8 +172,8 @@ export interface AppConfig {
  * Example: [{"id":"endpoint1","url":"https://example.com/webhook","enabled":true}]
  */
 function parseWebhookEndpoints(
-  envValue: string | undefined
-): AppConfig['output']['webhook']['endpoints'] {
+  envValue: string | undefined,
+): AppConfig["output"]["webhook"]["endpoints"] {
   if (!envValue) {
     return [];
   }
@@ -191,7 +197,7 @@ function parseWebhookEndpoints(
       }));
     }
   } catch (error) {
-    console.warn('Failed to parse OUTPUT_WEBHOOK_ENDPOINTS:', error);
+    console.warn("Failed to parse OUTPUT_WEBHOOK_ENDPOINTS:", error);
   }
 
   return [];
@@ -202,119 +208,166 @@ function parseWebhookEndpoints(
  */
 function loadConfig(): AppConfig {
   return {
-    nodeEnv: process.env.NODE_ENV || 'development',
-    port: parseInt(process.env.PORT || '3000', 10),
+    nodeEnv: process.env.NODE_ENV || "development",
+    port: parseInt(process.env.PORT || "3000", 10),
 
     mqtt: {
-      brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
+      brokerUrl: process.env.MQTT_BROKER_URL || "mqtt://localhost:1883",
       clientId: process.env.MQTT_CLIENT_ID || `mqtt-middleware-${Date.now()}`,
       username: process.env.MQTT_USERNAME,
       password: process.env.MQTT_PASSWORD,
-      reconnectPeriod: parseInt(process.env.MQTT_RECONNECT_PERIOD || '5000', 10),
-      connectTimeout: parseInt(process.env.MQTT_CONNECT_TIMEOUT || '30000', 10),
-      keepalive: parseInt(process.env.MQTT_KEEPALIVE || '60', 10),
-      clean: process.env.MQTT_CLEAN === 'true',
+      reconnectPeriod: parseInt(
+        process.env.MQTT_RECONNECT_PERIOD || "5000",
+        10,
+      ),
+      connectTimeout: parseInt(process.env.MQTT_CONNECT_TIMEOUT || "30000", 10),
+      keepalive: parseInt(process.env.MQTT_KEEPALIVE || "60", 10),
+      clean: process.env.MQTT_CLEAN === "true",
     },
 
     topics: {
-      v5008Upload: process.env.MQTT_TOPIC_V5008_UPLOAD || 'V5008Upload/+/+',
-      v5008Download: process.env.MQTT_TOPIC_V5008_DOWNLOAD || 'V5008Download/+/+',
-      v6800Upload: process.env.MQTT_TOPIC_V6800_UPLOAD || 'V6800Upload/+/+',
-      v6800Download: process.env.MQTT_TOPIC_V6800_DOWNLOAD || 'V6800Download/+/+',
+      v5008Upload: process.env.MQTT_TOPIC_V5008_UPLOAD || "V5008Upload/+/+",
+      v5008Download:
+        process.env.MQTT_TOPIC_V5008_DOWNLOAD || "V5008Download/+/+",
+      v6800Upload: process.env.MQTT_TOPIC_V6800_UPLOAD || "V6800Upload/+/+",
+      v6800Download:
+        process.env.MQTT_TOPIC_V6800_DOWNLOAD || "V6800Download/+/+",
     },
 
     database: {
-      enabled: process.env.DB_ENABLED === 'true',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-      username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'mqtt_middleware',
-      connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10', 10),
+      enabled: process.env.DB_ENABLED === "true",
+      host: process.env.DB_HOST || "localhost",
+      port: parseInt(process.env.DB_PORT || "3306", 10),
+      username: process.env.DB_USERNAME || "root",
+      password: process.env.DB_PASSWORD || "",
+      database: process.env.DB_NAME || "mqtt_middleware",
+      connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || "10", 10),
     },
 
     databaseWriter: {
-      enabled: process.env.DB_WRITER_ENABLED !== 'false',
-      batchSize: parseInt(process.env.DB_WRITER_BATCH_SIZE || '10', 10),
-      maxQueueSize: parseInt(process.env.DB_WRITER_MAX_QUEUE || '1000', 10),
-      retryCount: parseInt(process.env.DB_WRITER_RETRY_COUNT || '3', 10),
-      queueTimeout: parseInt(process.env.DB_WRITER_QUEUE_TIMEOUT || '5000', 10),
+      enabled: process.env.DB_WRITER_ENABLED !== "false",
+      batchSize: parseInt(process.env.DB_WRITER_BATCH_SIZE || "10", 10),
+      maxQueueSize: parseInt(process.env.DB_WRITER_MAX_QUEUE || "1000", 10),
+      retryCount: parseInt(process.env.DB_WRITER_RETRY_COUNT || "3", 10),
+      queueTimeout: parseInt(process.env.DB_WRITER_QUEUE_TIMEOUT || "5000", 10),
     },
 
     log: {
-      level: process.env.LOG_LEVEL || 'info',
-      format: process.env.LOG_FORMAT || 'json',
+      level: process.env.LOG_LEVEL || "info",
+      format: process.env.LOG_FORMAT || "json",
     },
 
     features: {
-      enableCache: process.env.ENABLE_CACHE !== 'false',
-      enableRelay: process.env.ENABLE_RELAY !== 'false',
-      enableWebsocket: process.env.ENABLE_WEBSOCKET === 'true',
-      enableWebhook: process.env.ENABLE_WEBHOOK === 'true',
-      enableDatabase: process.env.ENABLE_DATABASE === 'true',
+      enableCache: process.env.ENABLE_CACHE !== "false",
+      enableRelay: process.env.ENABLE_RELAY !== "false",
+      enableWebsocket: process.env.ENABLE_WEBSOCKET === "true",
+      enableWebhook: process.env.ENABLE_WEBHOOK === "true",
+      enableDatabase: process.env.ENABLE_DATABASE === "true",
     },
 
     api: {
-      enabled: process.env.API_ENABLED !== 'false',
-      port: parseInt(process.env.API_PORT || '3000', 10),
-      host: process.env.API_HOST || '0.0.0.0',
-      enableCors: process.env.API_ENABLE_CORS !== 'false',
-      corsOrigins: (process.env.API_CORS_ORIGINS || '*').split(',').map(o => o.trim()),
-      apiPrefix: process.env.API_PREFIX || '/api/v1',
+      enabled: process.env.API_ENABLED !== "false",
+      port: parseInt(process.env.API_PORT || "3000", 10),
+      host: process.env.API_HOST || "0.0.0.0",
+      enableCors: process.env.API_ENABLE_CORS !== "false",
+      corsOrigins: (process.env.API_CORS_ORIGINS || "*")
+        .split(",")
+        .map((o) => o.trim()),
+      apiPrefix: process.env.API_PREFIX || "/api/v1",
     },
 
     modules: {
       smartHB: {
-        enabled: process.env.MODULE_SMART_HB_ENABLED !== 'false',
+        enabled: process.env.MODULE_SMART_HB_ENABLED !== "false",
         config: {
-          queryCooldown: parseInt(process.env.MODULE_SMART_HB_QUERY_COOLDOWN || '300000', 10),
-          triggerOnHeartbeat: process.env.MODULE_SMART_HB_TRIGGER_ON_HEARTBEAT !== 'false',
+          queryCooldown: parseInt(
+            process.env.MODULE_SMART_HB_QUERY_COOLDOWN || "300000",
+            10,
+          ),
+          triggerOnHeartbeat:
+            process.env.MODULE_SMART_HB_TRIGGER_ON_HEARTBEAT !== "false",
         },
       },
       protocolAdapter: {
-        enabled: process.env.MODULE_PROTOCOL_ADAPTER_ENABLED !== 'false',
+        enabled: process.env.MODULE_PROTOCOL_ADAPTER_ENABLED !== "false",
         config: {
           deduplicationWindow: parseInt(
-            process.env.MODULE_PROTOCOL_ADAPTER_DEDUP_WINDOW || '1000',
-            10
+            process.env.MODULE_PROTOCOL_ADAPTER_DEDUP_WINDOW || "1000",
+            10,
           ),
+        },
+      },
+      watchdog: {
+        enabled: process.env.MODULE_WATCHDOG_ENABLED !== "false",
+        config: {
+          healthCheckInterval:
+            parseInt(process.env.WATCHDOG_HEALTH_CHECK_INTERVAL || "30", 10) *
+            1000, // Convert seconds to milliseconds
         },
       },
     },
 
     output: {
       mqttRelay: {
-        enabled: process.env.OUTPUT_MQTT_RELAY_ENABLED === 'true',
-        brokerUrl: process.env.OUTPUT_MQTT_RELAY_URL || 'mqtt://localhost:1884',
+        enabled: process.env.OUTPUT_MQTT_RELAY_ENABLED === "true",
+        brokerUrl: process.env.OUTPUT_MQTT_RELAY_URL || "mqtt://localhost:1884",
         clientId: process.env.OUTPUT_MQTT_RELAY_CLIENT_ID,
         username: process.env.OUTPUT_MQTT_RELAY_USERNAME,
         password: process.env.OUTPUT_MQTT_RELAY_PASSWORD,
-        reconnectPeriod: parseInt(process.env.OUTPUT_MQTT_RELAY_RECONNECT_PERIOD || '5000', 10),
-        connectTimeout: parseInt(process.env.OUTPUT_MQTT_RELAY_CONNECT_TIMEOUT || '30000', 10),
-        keepalive: parseInt(process.env.OUTPUT_MQTT_RELAY_KEEPALIVE || '60', 10),
-        qos: parseInt(process.env.OUTPUT_MQTT_RELAY_QOS || '1', 10) as 0 | 1 | 2,
-        retain: process.env.OUTPUT_MQTT_RELAY_RETAIN === 'true',
-        topicPrefix: process.env.OUTPUT_MQTT_RELAY_TOPIC_PREFIX || 'middleware',
-        includeDeviceType: process.env.OUTPUT_MQTT_RELAY_INCLUDE_TYPE !== 'false',
+        reconnectPeriod: parseInt(
+          process.env.OUTPUT_MQTT_RELAY_RECONNECT_PERIOD || "5000",
+          10,
+        ),
+        connectTimeout: parseInt(
+          process.env.OUTPUT_MQTT_RELAY_CONNECT_TIMEOUT || "30000",
+          10,
+        ),
+        keepalive: parseInt(
+          process.env.OUTPUT_MQTT_RELAY_KEEPALIVE || "60",
+          10,
+        ),
+        qos: parseInt(process.env.OUTPUT_MQTT_RELAY_QOS || "1", 10) as
+          | 0
+          | 1
+          | 2,
+        retain: process.env.OUTPUT_MQTT_RELAY_RETAIN === "true",
+        topicPrefix: process.env.OUTPUT_MQTT_RELAY_TOPIC_PREFIX || "middleware",
+        includeDeviceType:
+          process.env.OUTPUT_MQTT_RELAY_INCLUDE_TYPE !== "false",
       },
       webSocket: {
-        enabled: process.env.OUTPUT_WEBSOCKET_ENABLED === 'true',
-        port: parseInt(process.env.OUTPUT_WEBSOCKET_PORT || '3001', 10),
-        host: process.env.OUTPUT_WEBSOCKET_HOST || '0.0.0.0',
-        path: process.env.OUTPUT_WEBSOCKET_PATH || '/ws',
-        heartbeatInterval: parseInt(process.env.OUTPUT_WEBSOCKET_HEARTBEAT || '30000', 10),
-        maxClients: parseInt(process.env.OUTPUT_WEBSOCKET_MAX_CLIENTS || '100', 10),
-        perMessageDeflate: process.env.OUTPUT_WEBSOCKET_COMPRESSION === 'true',
+        enabled: process.env.OUTPUT_WEBSOCKET_ENABLED === "true",
+        port: parseInt(process.env.OUTPUT_WEBSOCKET_PORT || "3001", 10),
+        host: process.env.OUTPUT_WEBSOCKET_HOST || "0.0.0.0",
+        path: process.env.OUTPUT_WEBSOCKET_PATH || "/ws",
+        heartbeatInterval: parseInt(
+          process.env.OUTPUT_WEBSOCKET_HEARTBEAT || "30000",
+          10,
+        ),
+        maxClients: parseInt(
+          process.env.OUTPUT_WEBSOCKET_MAX_CLIENTS || "100",
+          10,
+        ),
+        perMessageDeflate: process.env.OUTPUT_WEBSOCKET_COMPRESSION === "true",
       },
       webhook: {
-        enabled: process.env.OUTPUT_WEBHOOK_ENABLED === 'true',
+        enabled: process.env.OUTPUT_WEBHOOK_ENABLED === "true",
         endpoints: parseWebhookEndpoints(process.env.OUTPUT_WEBHOOK_ENDPOINTS),
         defaultRetryConfig: {
-          maxRetries: parseInt(process.env.OUTPUT_WEBHOOK_MAX_RETRIES || '3', 10),
-          retryDelay: parseInt(process.env.OUTPUT_WEBHOOK_RETRY_DELAY || '1000', 10),
-          timeout: parseInt(process.env.OUTPUT_WEBHOOK_TIMEOUT || '10000', 10),
+          maxRetries: parseInt(
+            process.env.OUTPUT_WEBHOOK_MAX_RETRIES || "3",
+            10,
+          ),
+          retryDelay: parseInt(
+            process.env.OUTPUT_WEBHOOK_RETRY_DELAY || "1000",
+            10,
+          ),
+          timeout: parseInt(process.env.OUTPUT_WEBHOOK_TIMEOUT || "10000", 10),
         },
-        maxConcurrentRequests: parseInt(process.env.OUTPUT_WEBHOOK_MAX_CONCURRENT || '10', 10),
+        maxConcurrentRequests: parseInt(
+          process.env.OUTPUT_WEBHOOK_MAX_CONCURRENT || "10",
+          10,
+        ),
       },
     },
   };
@@ -327,23 +380,26 @@ function validateConfig(config: AppConfig): void {
   const errors: string[] = [];
 
   if (!config.mqtt.brokerUrl) {
-    errors.push('MQTT_BROKER_URL is required');
+    errors.push("MQTT_BROKER_URL is required");
   }
 
   if (config.port < 1 || config.port > 65535) {
-    errors.push('PORT must be between 1 and 65535');
+    errors.push("PORT must be between 1 and 65535");
   }
 
   if (config.api.port < 1 || config.api.port > 65535) {
-    errors.push('API_PORT must be between 1 and 65535');
+    errors.push("API_PORT must be between 1 and 65535");
   }
 
-  if (config.output.webSocket.port < 1 || config.output.webSocket.port > 65535) {
-    errors.push('OUTPUT_WEBSOCKET_PORT must be between 1 and 65535');
+  if (
+    config.output.webSocket.port < 1 ||
+    config.output.webSocket.port > 65535
+  ) {
+    errors.push("OUTPUT_WEBSOCKET_PORT must be between 1 and 65535");
   }
 
   if (errors.length > 0) {
-    throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
+    throw new Error(`Configuration validation failed:\n${errors.join("\n")}`);
   }
 }
 
